@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Цифровая Академия — База данных</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: #070b16;
+    color: #fff;
+    overflow: hidden;
+  }
+
+  .deck { position: relative; width: 100%; height: 100vh; }
+
+  .slide {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    padding: 32px;
+    opacity: 0; pointer-events: none;
+    transition: opacity .5s ease, transform .5s ease;
+    transform: scale(.98);
+  }
+  .slide.active { opacity: 1; pointer-events: auto; transform: scale(1); }
+
+  /* Слайд 1 — синий/фиолетовый */
+  .slide-1 { background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 55%, #6d28d9 100%); }
+  /* Слайд 2 — бирюзовый/зелёный */
+  .slide-2 { background: linear-gradient(135deg, #042f2e 0%, #0f766e 50%, #22d3ee 100%); }
+
+  .card {
+    position: relative;
+    width: 1200px; max-width: 100%;
+    border-radius: 24px;
+    overflow: hidden;
+    background: rgba(255,255,255,.06);
+    border: 1px solid rgba(255,255,255,.14);
+    backdrop-filter: blur(10px);
+    box-shadow: 0 30px 80px rgba(0,0,0,.5);
+  }
+  .card::before {
+    content: "";
+    position: absolute; inset: 0;
+    background-image:
+      linear-gradient(rgba(255,255,255,.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,.05) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+  }
+  .glow { position: absolute; border-radius: 50%; filter: blur(70px); opacity: .35; pointer-events: none; }
+  .glow-a { width: 340px; height: 340px; background: #22d3ee; top: -120px; right: -80px; }
+  .glow-b { width: 380px; height: 380px; background: #a78bfa; bottom: -160px; left: -100px; }
+  .slide-2 .glow-a { background: #34d399; }
+  .slide-2 .glow-b { background: #22d3ee; }
+
+  .inner { position: relative; padding: 44px 56px; }
+
+  .top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+  .brand { display: flex; align-items: center; gap: 14px; }
+  .logo {
+    width: 52px; height: 52px; border-radius: 14px;
+    background: linear-gradient(135deg, #22d3ee, #a78bfa);
+    display: grid; place-items: center;
+    font-weight: 800; font-size: 20px; color: #0f172a;
+    box-shadow: 0 8px 24px rgba(34,211,238,.35);
+  }
+  .slide-2 .logo { background: linear-gradient(135deg, #34d399, #22d3ee); }
+  .brand-text h1 { font-size: 19px; font-weight: 700; }
+  .brand-text p { font-size: 13px; color: #c7d2fe; margin-top: 2px; }
+  .slide-2 .brand-text p { color: #a7f3d0; }
+
+  .pill {
+    font-size: 12px; font-weight: 700; letter-spacing: .5px;
+    padding: 8px 16px; border-radius: 999px;
+    background: rgba(34,211,238,.15);
+    border: 1px solid rgba(34,211,238,.45);
+    color: #67e8f9; text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .slide-2 .pill { background: rgba(52,211,153,.15); border-color: rgba(52,211,153,.45); color: #6ee7b7; }
+
+  .title {
+    font-size: 42px; font-weight: 800; line-height: 1.1; margin-bottom: 10px;
+    background: linear-gradient(90deg, #ffffff, #c7d2fe);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .slide-2 .title {
+    background: linear-gradient(90deg, #ffffff, #a7f3d0);
+    -webkit-background-clip: text; background-clip: text;
+  }
+  .subtitle { font-size: 17px; color: #cbd5e1; margin-bottom: 30px; }
+
+  .steps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 28px; }
+  .step {
+    background: rgba(255,255,255,.06);
+    border: 1px solid rgba(255,255,255,.12);
+    border-radius: 16px; padding: 18px 16px;
+  }
+  .step .num {
+    width: 30px; height: 30px; border-radius: 9px;
+    background: linear-gradient(135deg, #22d3ee, #a78bfa);
+    color: #0f172a; font-weight: 800; font-size: 14px;
+    display: grid; place-items: center; margin-bottom: 12px;
+  }
+  .slide-2 .step .num { background: linear-gradient(135deg, #34d399, #22d3ee); }
+  .step h3 { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+  .step p { font-size: 16.5px; color: #f1a500; line-height: 1.45; }
+  .step code {
+    display: inline-block; margin-top: 6px;
+    font-size: 11px; background: rgba(0,0,0,.35);
+    padding: 3px 8px; border-radius: 6px; color: #67e8f9;
+    font-family: 'Consolas', monospace;
+  }
+  .slide-2 .step code { color: #6ee7b7; }
+
+  .rules { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 26px; }
+  .rule {
+    font-size: 12.5px; padding: 7px 14px; border-radius: 999px;
+    background: rgba(255,255,255,.07);
+    border: 1px solid rgba(255,255,255,.14);
+    color: #e2e8f0;
+  }
+  .rule b { color: #67e8f9; font-weight: 700; }
+  .slide-2 .rule b { color: #6ee7b7; }
+
+  .footer {
+    display: flex; align-items: center; justify-content: space-between;
+    padding-top: 20px; border-top: 1px solid rgba(255,255,255,.12);
+  }
+  .footer .links { display: flex; gap: 20px; font-size: 12.5px; flex-wrap: wrap; }
+  .footer .links span { color: #94a3b8; }
+  .footer .links b { color: #c7d2fe; font-weight: 600; }
+  .cta {
+    font-size: 13px; font-weight: 700;
+    padding: 10px 20px; border-radius: 999px;
+    background: linear-gradient(90deg, #22d3ee, #a78bfa);
+    color: #0f172a;
+    box-shadow: 0 8px 24px rgba(167,139,250,.35);
+    white-space: nowrap;
+  }
+  .slide-2 .cta { background: linear-gradient(90deg, #34d399, #22d3ee); }
+
+  /* Навигация */
+  .nav {
+    position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%);
+    display: flex; align-items: center; gap: 14px;
+    padding: 10px 18px; border-radius: 999px;
+    background: rgba(255,255,255,.08);
+    border: 1px solid rgba(255,255,255,.16);
+    backdrop-filter: blur(10px);
+    z-index: 10;
+  }
+  .nav button {
+    width: 38px; height: 38px; border-radius: 50%;
+    border: none; cursor: pointer;
+    background: rgba(255,255,255,.14);
+    color: #fff; font-size: 16px;
+    display: grid; place-items: center;
+    transition: background .2s;
+  }
+  .nav button:hover { background: rgba(255,255,255,.28); }
+  .dots { display: flex; gap: 8px; }
+  .dot {
+    width: 10px; height: 10px; border-radius: 50%;
+    background: rgba(255,255,255,.3); cursor: pointer;
+    transition: all .25s;
+  }
+  .dot.active { background: #22d3ee; transform: scale(1.25); }
+
+  @media (max-width: 900px) {
+    .steps { grid-template-columns: 1fr 1fr; }
+    .title { font-size: 30px; }
+    .inner { padding: 30px 24px; }
+    .footer { flex-direction: column; gap: 14px; align-items: flex-start; }
+  }
+</style>
+</head>
+<body>
+
+<div class="deck">
+
+  <!-- СЛАЙД 1 -->
+  <section class="slide slide-1 active">
+    <div class="card">
+      <div class="glow glow-a"></div>
+      <div class="glow glow-b"></div>
+      <div class="inner">
+
+        <div class="top">
+          <div class="brand">
+            <div class="logo">ЦА</div>
+            <div class="brand-text">
+              <h1>Цифровая Академия</h1>
+              <p>База данных · Спринт 1</p>
+            </div>
+          </div>
+          <div class="pill">MySQL 8+ · 3НФ</div>
+        </div>
+
+        <div class="title">Твоя таблица — часть большой БД</div>
+        <div class="subtitle">23 студента · 23 таблицы · одна целостная база данных</div>
+
+        <div class="steps">
+          <div class="step">
+            <div class="num">1</div>
+            <h3>Открой папку database</h3>
+            <p>В корне репозитория найди свою папку по имени сущности.</p>
+            <code>database/scripts/entities/&lt;table&gt;/</code>
+          </div>
+          <div class="step">
+            <div class="num">2</div>
+            <h3>Прочитай README</h3>
+            <p>Внутри — задание, поля-рекомендации и связи с другими таблицами.</p>
+            <code>README.md</code>
+          </div>
+          <div class="step">
+            <div class="num">3</div>
+            <h3>Напиши SQL</h3>
+            <p>Создай файл с таблицей: PK, FK, комментарии. Только CREATE TABLE.</p>
+            <code>create_table.sql</code>
+          </div>
+          <div class="step">
+            <div class="num">4</div>
+            <h3>Сдай работу</h3>
+            <p>Коммит → PR → галочки в Issue → карточка в Projects → In Review.</p>
+            <code>Closes #issue</code>
+          </div>
+        </div>
+
+        <div class="rules">
+          <div class="rule"><b>id</b> — всегда PRIMARY KEY</div>
+          <div class="rule">FK: <b>&lt;сущность&gt;_id</b></div>
+          <div class="rule">snake_case · множественное число</div>
+          <div class="rule">InnoDB · utf8mb4</div>
+          <div class="rule">COMMENT='...' обязательно</div>
+          <div class="rule">3НФ — без дублей</div>
+        </div>
+
+        <div class="footer">
+          <div class="links">
+            <span>Wiki: <b>Старт</b></span>
+            <span>Wiki: <b>Схема сущностей</b></span>
+            <span>Issues: <b>label: sprint-1</b></span>
+            <span>Projects: <b>Kanban</b></span>
+          </div>
+          <div class="cta">Вопросы → Discussions</div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- СЛАЙД 2 -->
+  <section class="slide slide-2">
+    <div class="card">
+      <div class="glow glow-a"></div>
+      <div class="glow glow-b"></div>
+      <div class="inner">
+
+        <div class="top">
+          <div class="brand">
+            <div class="logo">ЦА</div>
+            <div class="brand-text">
+              <h1>Цифровая Академия</h1>
+              <p>База данных · Спринт 1 · Задание 2</p>
+            </div>
+          </div>
+          <div class="pill">draw.io · ER-диаграмма</div>
+        </div>
+
+        <div class="title">Диаграмма связей и порядок создания</div>
+        <div class="subtitle">Покажи, кто на кого ссылается — и кто должен быть создан первым</div>
+
+        <div class="steps">
+          <div class="step">
+            <div class="num">1</div>
+            <h3>Открой свою папку</h3>
+            <p>Все файлы задания 2 — в папке твоей сущности.</p>
+            <code>entities/&lt;table&gt;/</code>
+          </div>
+          <div class="step">
+            <div class="num">2</div>
+            <h3>Нарисуй в draw.io</h3>
+            <p>Покажи связи FK: кто ссылается на тебя и на кого ссылаешься ты.</p>
+            <code>schema.drawio</code>
+          </div>
+          <div class="step">
+            <div class="num">3</div>
+            <h3>Покажи порядок</h3>
+            <p>Стрелками — последовательность создания таблиц без ошибок FK.</p>
+            <code>1 → 2 → 3</code>
+          </div>
+          <div class="step">
+            <div class="num">4</div>
+            <h3>Сдай ссылку</h3>
+            <p>Скриншот + .drawio в папку, коммит, ссылка на коммит или папку.</p>
+            <code>commit / folder URL</code>
+          </div>
+        </div>
+
+        <div class="rules">
+          <div class="rule"><b>draw.io</b> — формат .drawio</div>
+          <div class="rule">Покажи <b>все FK</b> своей таблицы</div>
+          <div class="rule">Стрелками — <b>порядок создания</b></div>
+          <div class="rule">Справочники — <b>первыми</b></div>
+          <div class="rule">Зависимые — <b>последними</b></div>
+          <div class="rule">Файлы — <b>в своей папке</b></div>
+        </div>
+
+        <div class="footer">
+          
+          <div class="cta">Сдай ссылку на коммит или на папку в которой ты работаешь</div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<!-- Навигация -->
+<div class="nav">
+  <button id="prev" aria-label="Назад">‹</button>
+  <div class="dots">
+    <div class="dot active" data-i="0"></div>
+    <div class="dot" data-i="1"></div>
+  </div>
+  <button id="next" aria-label="Вперёд">›</button>
+</div>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  const dots = document.querySelectorAll('.dot');
+  let current = 0;
+
+  function go(i) {
+    current = Math.max(0, Math.min(slides.length - 1, i));
+    slides.forEach((s, idx) => s.classList.toggle('active', idx === current));
+    dots.forEach((d, idx) => d.classList.toggle('active', idx === current));
+  }
+
+  document.getElementById('next').onclick = () => go(current + 1);
+  document.getElementById('prev').onclick = () => go(current - 1);
+  dots.forEach(d => d.onclick = () => go(+d.dataset.i));
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === ' ') go(current + 1);
+    if (e.key === 'ArrowLeft') go(current - 1);
+  });
+
+  let startX = 0;
+  document.addEventListener('touchstart', e => startX = e.touches[0].clientX);
+  document.addEventListener('touchend', e => {
+    const dx = e.changedTouches[0].clientX - startX;
+    if (dx < -50) go(current + 1);
+    if (dx > 50) go(current - 1);
+  });
+</script>
+
+</body>
+</html>
